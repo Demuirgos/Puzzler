@@ -38,7 +38,7 @@
 @code {
     [Parameter] public Board? GameBoard { get; set; }
     [Parameter] public float ScalingFactor { get; set; }= 1.0f;
-	private bool _applyDropClassesOnDragStarted = false;
+    private bool _applyDropClassesOnDragStarted = false;
 
     private string GetPiecePosition(Jigsaw piece) {
         if(piece.Place != "Sidebar") {
@@ -46,10 +46,15 @@
             string posStr =  $"position:absolute;left:{-ScalingFactor * piece.Corrections[0]}px;top:{-ScalingFactor * piece.Corrections[1]}px;";
             return $"{scaleStr}{posStr}";
         } else {
-            Random _random = new Random(10);
-            string scaleStr = $"transform:scale({0.4});";
+            Random _random = new Random(piece.GetHashCode());
+            float scale = 1.0f;
+            if (GameBoard.PieceSize.Value.Width >= 200)
+            {
+                scale = (200.0f / GameBoard.PieceSize.Value.Width);
+            } 
+            string scaleStr = $"transform:scale({scale});";
             int yAxis = _random.Next(0, 50);
-            string posStr =  $"position:absolute;left:{-0.3 * GameBoard.PieceSize.Value.Width}px; top:{yAxis}vh;";
+            string posStr =  $"position:absolute;left:{-.10 * GameBoard.PieceSize.Value.Width}px; top:{yAxis}vh;";
             return $"{scaleStr}{posStr}";
         }
 
@@ -70,11 +75,14 @@
         {
             return;
         }
-
-        if(dropItem.IndexInZone > 1) {
-            dropItem.Item.Place = "Sidebar";
-        }
+        // check if other items are in the dropzone
+        if(dropItem.DropzoneIdentifier != "Sidebar") {
+            var otherItems = GameBoard.Pieces.Where(p => p.Place == dropItem.DropzoneIdentifier);
+            if(otherItems.Any()) {
+                var otherItem = otherItems.First();
+                otherItem.Place = dropItem.Item.Place;
+            }
+        } 
         dropItem.Item.Place = dropItem.DropzoneIdentifier;
-        Console.WriteLine($"dropped on {dropItem.DropzoneIdentifier}");
 	}
 }
