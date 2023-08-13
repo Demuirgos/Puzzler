@@ -1,0 +1,72 @@
+﻿@using System.Threading.Tasks
+@inject HttpClient Http
+@inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
+<MudThemeProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h5" Class="ml-3">Puzzler</MudText>
+        <MudSpacer />
+        <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles">
+            <ButtonTemplate>
+                <MudFab HtmlTag="label"
+                        Color="Color.Success"
+                        Icon="@Icons.Material.Filled.AttachFile"
+                        for="@context" />
+            </ButtonTemplate>
+        </MudFileUpload>
+    </MudAppBar>
+    <MudMainContent>
+        <FileUpload/>
+        <BoardLayout GameBoard="@Pieces" ScalingFactor="@Scale"/>
+    </MudMainContent>
+</MudLayout>
+
+
+@code
+{
+    Board? Pieces = null;
+    float Scale = 1.0f;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            string pictureLink = "sample-data/NgePic.jpg";
+            var bytes = await Http.GetByteArrayAsync(pictureLink);
+            var image = Image.Load<Rgba32>(bytes);
+            await HandleImage(image);
+        }
+    }
+
+    private async Task UploadFiles(IBrowserFile file)
+    {
+        Console.WriteLine($"File name: {file.Name}");   
+        var stream = file.OpenReadStream();
+        var bytes = new byte[stream.Length];
+        await stream.ReadAsync(bytes, 0, (int)stream.Length);
+        var image = Image.Load<Rgba32>(bytes);
+
+        // get windows size
+        await HandleImage(image);
+    }
+
+    private async Task HandleImage(Image<Rgba32> image)
+    {
+        Pieces = PieceExt.GeneratePieces(image, 3, 3);
+        foreach (var piece in Pieces.Pieces)
+        {
+            Console.WriteLine($"Piece: {piece.Image}");
+        }
+
+        // scale image to fit window
+        var width = image.Width;
+        var height = image.Height;
+        // get screen size and scale image to fit
+        var screenSize = await BoardExt.GetDimensions(JSRuntime);
+        var scale = Math.Min(screenSize.Width / width, screenSize.Height / height);
+
+        StateHasChanged();
+        return;
+    }
+}
