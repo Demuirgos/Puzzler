@@ -60,17 +60,9 @@
 
     private async Task HandleImage(Image<Rgba32> image, int rows = 3, int columns = 3)
     {
-        //image.Mutate(x => x.Resize(image.Width / 2, image.Height / 2));
         Pieces = PieceExt.GeneratePieces(image, rows, columns);
-        foreach (var piece in Pieces.Pieces)
-        {
-            Console.WriteLine($"Piece: {piece.Image}");
-        }
-
-        // scale image to fit window
         var width = image.Width;
         var height = image.Height;
-        // get screen size and scale image to fit
         var screenSize = await BoardExt.GetDimensions(JSRuntime);
         var scale = Math.Min(screenSize.Width / width, screenSize.Height / height);
 
