@@ -1,0 +1,88 @@
+@if(GameBoard is not null) {
+    <MudPaper Style="height:100vh;width:100wh;">
+        <MudDropContainer T="Jigsaw" Items="GameBoard.Pieces" ApplyDropClassesOnDragStarted="_applyDropClassesOnDragStarted"  ItemsSelector="@((item,dropzone) => item.Place == dropzone)"  CanDropClass="mud-border-success" NoDropClass="mud-border-error" ItemDropped="ItemUpdated" Class="d-flex flex-column flex-grow-1">
+            <ChildContent>
+                <MudGrid Spacing="0" Justify="Justify.FlexStart">
+                    <MudItem>
+                        <MudDropZone T="Jigsaw" Identifier="Sidebar" CanDrop="@((item) => true)" Class="rounded-lg border-2 border-solid mud-border-lines-default pa-6 ma-8" Style="height:80vh;width:300px;">
+                            <MudText Typo="Typo.h6" Class="mb-4">Sidebar</MudText>
+                        </MudDropZone>
+                    </MudItem>
+                    <MudItem Class="pa-6 ma-8">
+                        @for(int r = 0; r < GameBoard.PieceCount.Value.Height; r++)
+                        {
+                            var row = r.ToString();
+                            <div class="d-flex">
+                                @for (int c = 0; c < GameBoard.PieceCount.Value.Width; c++)
+                                {
+                                    var col = c.ToString();
+                                    <MudDropZone T="Jigsaw" Identifier="@($"{row}{col}")" DraggingClass="mud-theme-success" Class="border-2 border-solid" Style="@GetBoardDimension(r, c)"/>
+                                }
+                            </div>
+                        }
+                    </MudItem>
+                </MudGrid>
+                <MudToolBar>
+                    <MudCheckBox @bind-Checked="_applyDropClassesOnDragStarted" Label="Apply Drop Classes On Drag Started" />
+                    <MudSpacer/>
+                    <MudButton OnClick="Reset">Reset</MudButton>
+                </MudToolBar>
+            </ChildContent>
+            <ItemRenderer>
+                <MudImage Src="@context.Image" Style="@GetPiecePosition(context)"/>
+            </ItemRenderer>
+        </MudDropContainer>
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public Board? GameBoard { get; set; }
+    [Parameter] public float ScalingFactor { get; set; }= 1.0f;
+    private bool _applyDropClassesOnDragStarted = false;
+
+    private string GetPiecePosition(Jigsaw piece) {
+        if(piece.Place != "Sidebar") {
+            string scaleStr = $"transform:scale({1});";
+            string posStr =  $"position:absolute;left:{-ScalingFactor * piece.Corrections[0]}px;top:{-ScalingFactor * piece.Corrections[1]}px;";
+            return $"{scaleStr}{posStr}";
+        } else {
+            Random _random = new Random(piece.GetHashCode());
+            float scale = 1.0f;
+            if (GameBoard.PieceSize.Value.Width >= 200)
+            {
+                scale = (200.0f / GameBoard.PieceSize.Value.Width);
+            } 
+            string scaleStr = $"transform:scale({scale});";
+            int yAxis = _random.Next(0, 50);
+            string posStr =  $"position:absolute;left:{-.10 * GameBoard.PieceSize.Value.Width}px; top:{yAxis}vh;";
+            return $"{scaleStr}{posStr}";
+        }
+
+    }
+    private string GetBoardDimension(int i, int j) => $"height:{ScalingFactor * GameBoard.PieceSize.Value.Height}px;width:{ScalingFactor * GameBoard.PieceSize.Value.Width}px;";
+
+	private void Reset()
+	{
+        for(int i = 0; i < GameBoard.Pieces.Length; i++)
+        {
+            GameBoard.Pieces[i].Place = "Sidebar";
+        }
+	}
+
+	private void ItemUpdated(MudItemDropInfo<Jigsaw> dropItem)
+	{
+        if(dropItem.Item.Place == dropItem.DropzoneIdentifier)
+        {
+            return;
+        }
+        // check if other items are in the dropzone
+        if(dropItem.DropzoneIdentifier != "Sidebar") {
+            var otherItems = GameBoard.Pieces.Where(p => p.Place == dropItem.DropzoneIdentifier);
+            if(otherItems.Any()) {
+                var otherItem = otherItems.First();
+                otherItem.Place = dropItem.Item.Place;
+            }
+        } 
+        dropItem.Item.Place = dropItem.DropzoneIdentifier;
+	}
+}

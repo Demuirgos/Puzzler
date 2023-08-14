@@ -1,0 +1,72 @@
+﻿@using System.Threading.Tasks
+@inherits LayoutComponentBase
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject IDialogService DialogService
+
+<MudThemeProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h5" Class="ml-3">Puzzler</MudText>
+        <MudSpacer />
+        <MudNumericField @bind-Value="HorizontalCount" Label="Width" Variant="Variant.Text" Min="2" Max="10" />
+        <MudSpacer />
+        <MudNumericField @bind-Value="VerticalCount" Label="Height" Variant="Variant.Text" Min="2" Max="10" />
+        <MudSpacer />
+        <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles">
+            <ButtonTemplate>
+                <MudFab HtmlTag="label"
+                        Color="Color.Success"
+                        Icon="@Icons.Material.Filled.AttachFile"
+                        for="@context" />
+            </ButtonTemplate>
+        </MudFileUpload>
+    </MudAppBar>
+    <MudMainContent>
+        <FileUpload/>
+        <BoardLayout GameBoard="@Pieces" ScalingFactor="@Scale"/>
+    </MudMainContent>
+</MudLayout>
+
+
+@code
+{
+    Board? Pieces = null;
+    float Scale = 1.0f;
+    int HorizontalCount { get; set; } = 3;
+    int VerticalCount { get; set; } = 3;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            string pictureLink = "sample-data/NgePic.jpg";
+            var bytes = await Http.GetByteArrayAsync(pictureLink);
+            var image = Image.Load<Rgba32>(bytes);
+            await HandleImage(image);
+        }
+    }
+
+    private async Task UploadFiles(IBrowserFile file)
+    {
+        Console.WriteLine($"File name: {file.Name}");   
+        var stream = file.OpenReadStream(int.MaxValue);
+        var bytes = new byte[stream.Length];
+        await stream.ReadAsync(bytes, 0, (int)stream.Length);
+        var image = Image.Load<Rgba32>(bytes);
+        await HandleImage(image, VerticalCount, HorizontalCount);
+    }
+
+
+    private async Task HandleImage(Image<Rgba32> image, int rows = 3, int columns = 3)
+    {
+        Pieces = PieceExt.GeneratePieces(image, rows, columns);
+        var width = image.Width;
+        var height = image.Height;
+        var screenSize = await BoardExt.GetDimensions(JSRuntime);
+        var scale = Math.Min(screenSize.Width / width, screenSize.Height / height);
+
+        StateHasChanged();
+        return;
+    }
+}

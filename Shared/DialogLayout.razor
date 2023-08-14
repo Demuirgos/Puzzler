@@ -1,0 +1,34 @@
+<MudDialog @bind-IsVisible="IsVisible">
+    <DialogContent>
+        <MudCard>
+            <MudCardMedia Image="@ImageSrc" Height="200" />
+            <MudCardContent>
+                <MudNumericField @bind-Value="HorizontalCount" Label="Width" Variant="Variant.Text" Min="2" Max="10" />
+                <MudNumericField @bind-Value="VerticalCount" Label="Height" Variant="Variant.Text" Min="2" Max="10" />
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Primary">Share</MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Primary">Learn More</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string ImageSrc { get; set; }
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback<Dimension> eventCallback { get; set; }
+    public int HorizontalCount { get; set; } = 3;
+    public int VerticalCount { get; set; } = 3;
+
+
+    async void Submit() {
+        await eventCallback.InvokeAsync(new Dimension(VerticalCount, HorizontalCount));
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+    void Cancel() => MudDialog.Cancel();
+}
